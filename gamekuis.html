@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kuis Online — A/B/C/D</title>
+<style>
+  :root {
+    --border: rgba(148, 163, 184, 0.2);
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --primary: #6366f1;
+    --primary-2: #8b5cf6;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    color: var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background:
+      radial-gradient(1000px 600px at 15% -10%, rgba(99,102,241,.35), transparent 60%),
+      radial-gradient(900px 500px at 90% 10%, rgba(139,92,246,.25), transparent 55%),
+      #070b18;
+    display: flex;
+    justify-content: center;
+    padding: 32px 16px 64px;
+  }
+  .page { width: 100%; max-width: 760px; margin: 0 auto; }
+
+  .card {
+    background: linear-gradient(180deg, rgba(30,41,59,.85), rgba(15,23,42,.85));
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    padding: 28px;
+    box-shadow: 0 30px 60px -25px rgba(0,0,0,.8);
+    animation: rise .35s ease both;
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .badge {
+    display: inline-block; font-size: 12px; letter-spacing: .12em; text-transform: uppercase;
+    color: #c7d2fe; background: rgba(99,102,241,.18);
+    border: 1px solid rgba(99,102,241,.35);
+    padding: 5px 12px; border-radius: 999px; margin-bottom: 14px;
+  }
+
+  h1 { font-size: clamp(24px, 5vw, 34px); margin: 0 0 8px; line-height: 1.2; }
+  .sub { color: var(--muted); margin: 0 0 22px; line-height: 1.6; }
+  .label { display: block; font-size: 14px; color: var(--muted); margin-bottom: 8px; }
+
+  .input {
+    width: 100%; padding: 14px 16px; border-radius: 14px;
+    border: 1px solid var(--border); background: rgba(2,6,23,.6);
+    color: var(--text); font-size: 16px; outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .input:focus { border-color: rgba(99,102,241,.8); box-shadow: 0 0 0 4px rgba(99,102,241,.18); }
+
+  .btn {
+    width: 100%; margin-top: 18px; padding: 15px 18px;
+    border: 0; border-radius: 14px; font-size: 16px; font-weight: 600;
+    cursor: pointer; color: #fff; transition: transform .15s, filter .2s;
+    font-family: inherit;
+  }
+  .btn.primary {
+    background: linear-gradient(135deg, var(--primary), var(--primary-2));
+    box-shadow: 0 12px 30px -12px rgba(99,102,241,.9);
+  }
+  .btn:hover { transform: translateY(-2px); filter: brightness(1.08); }
+  .btn:active { transform: translateY(0); }
+  .btn.ghost {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--muted); font-weight: 500;
+  }
+  .btn.small { padding: 10px; font-size: 14px; margin-top: 14px; }
+
+  /* Quiz */
+  .quiz-top { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+  .pill {
+    font-size: 13px; font-weight: 600; padding: 7px 14px; border-radius: 999px;
+    background: rgba(148,163,184,.12); border: 1px solid var(--border); color: #cbd5e1;
+  }
+  .pill.timer { color: #a5b4fc; }
+  .pill.timer.danger {
+    color: #fca5a5; border-color: rgba(239,68,68,.5);
+    background: rgba(239,68,68,.12); animation: pulse .8s infinite;
+  }
+  @keyframes pulse { 50% { opacity: .55; } }
+
+  .progress {
+    height: 8px; background: rgba(148,163,184,.15);
+    border-radius: 999px; overflow: hidden; margin-bottom: 22px;
+  }
+  .progress-fill {
+    height: 100%; border-radius: 999px;
+    background: linear-gradient(90deg, #22d3ee, #6366f1, #a855f7);
+    transition: width 1s linear;
+  }
+
+  .question { margin: 0 0 20px; line-height: 1.5; font-size: clamp(18px, 4vw, 22px); }
+
+  .options { display: grid; gap: 12px; }
+  .option {
+    display: flex; align-items: center; gap: 14px; width: 100%; text-align: left;
+    padding: 15px 16px; border-radius: 14px; border: 1px solid var(--border);
+    background: rgba(15,23,42,.7); color: var(--text); font-size: 16px;
+    cursor: pointer; transition: all .18s ease; font-family: inherit;
+  }
+  .option:hover:not(:disabled) {
+    border-color: rgba(99,102,241,.7); background: rgba(99,102,241,.12);
+    transform: translateX(4px);
+  }
+  .option:disabled { cursor: default; }
+  .letter {
+    flex: 0 0 34px; height: 34px; display: grid; place-items: center;
+    border-radius: 10px; background: rgba(99,102,241,.2);
+    border: 1px solid rgba(99,102,241,.35);
+    font-weight: 700; font-size: 14px; color: #c7d2fe;
+  }
+  .option.correct { border-color: rgba(34,197,94,.8); background: rgba(34,197,94,.16); }
+  .option.correct .letter { background: rgba(34,197,94,.3); border-color: rgba(34,197,94,.6); color: #bbf7d0; }
+  .option.wrong { border-color: rgba(239,68,68,.8); background: rgba(239,68,68,.16); }
+  .option.wrong .letter { background: rgba(239,68,68,.3); border-color: rgba(239,68,68,.6); color: #fecaca; }
+  .option.dim { opacity: .45; }
+
+  .feedback { min-height: 26px; margin-top: 16px; font-weight: 600; font-size: 15px; }
+  .ok { color: #4ade80; }
+  .no { color: #f87171; }
+
+  /* Result */
+  .score-big {
+    font-size: clamp(48px, 12vw, 72px); font-weight: 800; line-height: 1;
+    background: linear-gradient(135deg, #a5b4fc, #e879f9);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    margin: 6px 0 10px;
+  }
+  .result-meta { color: var(--muted); margin: 0 0 22px; line-height: 1.6; }
+  .review { display: grid; gap: 10px; margin-top: 6px; max-height: 360px; overflow-y: auto; padding-right: 6px; }
+  .review-item {
+    padding: 14px 16px; border-radius: 14px;
+    border: 1px solid var(--border); background: rgba(2,6,23,.55);
+  }
+  .review-item.good { border-color: rgba(34,197,94,.5); }
+  .review-item.bad  { border-color: rgba(239,68,68,.5); }
+  .review-item .q { font-weight: 600; margin-bottom: 8px; line-height: 1.45; }
+  .review-item .a { font-size: 14px; color: var(--muted); line-height: 1.6; }
+  .ri-ok { color: #4ade80; }
+  .ri-no { color: #f87171; }
+
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .row .btn { margin-top: 0; }
+
+  /* Leaderboard */
+  .leaderboard { margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px; }
+  .leaderboard h2 { font-size: 16px; margin: 0 0 14px; color: #cbd5e1; }
+  .leaderboard ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .leaderboard li {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 14px; border-radius: 12px;
+    background: rgba(2,6,23,.5); border: 1px solid var(--border);
+  }
+  .rank {
+    width: 26px; height: 26px; display: grid; place-items: center;
+    border-radius: 8px; background: rgba(99,102,241,.2);
+    font-size: 13px; font-weight: 700; color: #c7d2fe; flex: 0 0 auto;
+  }
+  .lb-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lb-score { font-weight: 700; color: #a5b4fc; font-variant-numeric: tabular-nums; }
+
+  .review::-webkit-scrollbar { width: 8px; }
+  .review::-webkit-scrollbar-thumb { background: rgba(148,163,184,.3); border-radius: 999px; }
+
+  @media (max-width: 480px) {
+    .card { padding: 22px 18px; border-radius: 18px; }
+    .row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page" id="app"></div>
+
+<script>
+/* ============================================================
+   SOAL — edit di sini sesuai kebutuhan
+   answer = index jawaban benar (0=A, 1=B, 2=C, 3=D)
+   ============================================================ */
+const QUESTIONS = [
+  { question: "Apa ibu kota Indonesia?", options: ["Bandung", "Jakarta", "Surabaya", "Medan"], answer: 1 },
+  { question: "Planet terbesar di Tata Surya adalah...", options: ["Saturnus", "Bumi", "Jupiter", "Neptunus"], answer: 2 },
+  { question: "Berapa hasil dari 12 × 8?", options: ["86", "96", "108", "92"], answer: 1 },
+  { question: "Siapa proklamator kemerdekaan Indonesia?", options: ["Soekarno & Hatta", "Soeharto & Habibie", "Ki Hajar Dewantara", "Sutan Sjahrir"], answer: 0 },
+  { question: "Unsur kimia dengan simbol 'O' adalah...", options: ["Emas", "Oksigen", "Osmium", "Ozon"], answer: 1 },
+  { question: "Gunung tertinggi di dunia adalah...", options: ["Gunung Semeru", "Mount Everest", "K2", "Kilimanjaro"], answer: 1 },
+  { question: "Bahasa pemrograman yang dijalankan di browser adalah...", options: ["Python", "Java", "JavaScript", "C++"], answer: 2 },
+  { question: "Berapa jumlah pemain inti satu tim sepak bola?", options: ["9", "10", "11", "12"], answer: 2 },
+  { question: "Hewan mamalia terbesar di dunia adalah...", options: ["Gajah Afrika", "Paus Biru", "Jerapah", "Badak"], answer: 1 },
+  { question: "Kapan Indonesia memproklamasikan kemerdekaannya?", options: ["17 Agustus 1945", "1 Juni 1945", "28 Oktober 1928", "10 November 1945"], answer: 0 }
+];
+
+const QUESTION_TIME = 20;        // detik per soal
+const LETTERS = ["A", "B", "C", "D"];
+const LB_KEY = "quiz-leaderboard-v1";
+
+/* ---------- state ---------- */
+let screen = "home";   // home | quiz | result
+let playerName = "";
+let deck = [];
+let index = 0;
+let selected = null;
+let locked = false;
+let answers = [];
+let timeLeft = QUESTION_TIME;
+let leaderboard = [];
+let saved = false;
+let timerId = null;
+let nextId = null;
+
+const app = document.getElementById("app");
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+/* ---------- helpers ---------- */
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function buildDeck() {
+  return shuffle(QUESTIONS).map((q) => {
+    const correctText = q.options[q.answer];
+    const options = shuffle(q.options);
+    return { question: q.question, options, answer: options.indexOf(correctText) };
+  });
+}
+
+function loadLeaderboard() {
+  try {
+    const raw = localStorage.getItem(LB_KEY);
+    leaderboard = raw ? JSON.parse(raw) : [];
+  } catch (e) { leaderboard = []; }
+}
+
+function saveScore(score, total) {
+  if (saved) return;
+  saved = true;
+  const entry = { name: playerName.trim() || "Anonim", score, total, date: Date.now() };
+  try {
+    const list = leaderboard.slice();
+    list.push(entry);
+    list.sort((a, b) => b.score - a.score || a.date - b.date);
+    leaderboard = list.slice(0, 10);
+    localStorage.setItem(LB_KEY, JSON.stringify(leaderboard));
+  } catch (e) {}
+}
+
+/* ---------- actions ---------- */
+function startQuiz() {
+  playerName = (document.getElementById("nama")?.value ?? playerName).trim();
+  deck = buildDeck();
+  index = 0; selected = null; locked = false; answers = [];
+  timeLeft = QUESTION_TIME; saved = false;
+  screen = "quiz";
+  render();
+  startTimer();
+}
+
+function startTimer() {
+  clearInterval(timerId);
+  timerId = setInterval(() => {
+    if (screen !== "quiz" || locked) return;
+    timeLeft -= 1;
+    const el = document.getElementById("timeLeft");
+    const bar = document.getElementById("timeBar");
+    const pill = document.getElementById("timerPill");
+    if (timeLeft <= 0) {
+      clearInterval(timerId);
+      if (el) el.textContent = "0s";
+      if (bar) bar.style.width = "0%";
+      handleAnswer(null);
+      return;
+    }
+    if (el) el.textContent = timeLeft + "s";
+    if (bar) bar.style.width = (timeLeft / QUESTION_TIME) * 100 + "%";
+    if (pill) pill.classList.toggle("danger", timeLeft <= 5);
+  }, 1000);
+}
+
+function handleAnswer(choice) {
+  if (locked || screen !== "quiz") return;
+  const current = deck[index];
+  const isCorrect = choice !== null && choice === current.answer;
+
+  locked = true;
+  selected = choice;
+  answers.push({ choice, correct: current.answer, isCorrect });
+  render();
+
+  clearTimeout(nextId);
+  nextId = setTimeout(goNext, 1300);
+}
+
+function goNext() {
+  clearInterval(timerId);
+  if (index + 1 >= deck.length) {
+    screen = "result";
+    render();
+    return;
+  }
+  index += 1;
+  selected = null;
+  locked = false;
+  timeLeft = QUESTION_TIME;
+  render();
+  startTimer();
+}
+
+function backHome() {
+  clearInterval(timerId);
+  clearTimeout(nextId);
+  screen = "home";
+  render();
+}
+
+function clearLeaderboard() {
+  try { localStorage.removeItem(LB_KEY); } catch (e) {}
+  leaderboard = [];
+  render();
+}
+
+/* ---------- render ---------- */
+function render() {
+  if (screen === "home") renderHome();
+  else if (screen === "quiz") renderQuiz();
+  else renderResult();
+}
+
+function renderHome() {
+  const lb = leaderboard.length
+    ? `<div class="leaderboard">
+         <h2>🏆 Papan Skor</h2>
+         <ol>
+           ${leaderboard.map((e, i) => `
+             <li>
+               <span class="rank">${i + 1}</span>
+               <span class="lb-name">${esc(e.name)}</span>
+               <span class="lb-score">${e.score}/${e.total}</span>
+             </li>`).join("")}
+         </ol>
+         <button class="btn ghost small" onclick="clearLeaderboard()">Reset papan skor</button>
+       </div>`
+    : "";
+
+  app.innerHTML = `
+    <div class="card">
+      <div class="badge">Kuis Online</div>
+      <h1>🧠 Kuis Pengetahuan</h1>
+      <p class="sub">${QUESTIONS.length} pertanyaan · ${QUESTION_TIME} detik per soal · jawaban A, B, C, D</p>
+
+      <label class="label" for="nama">Nama kamu</label>
+      <input id="nama" class="input" placeholder="Masukkan nama..." maxlength="20"
+             value="${esc(playerName)}" onkeydown="if(event.key==='Enter')startQuiz()" />
+
+      <button class="btn primary" onclick="startQuiz()">Mulai Kuis 🚀</button>
+      ${lb}
+    </div>`;
+
+  const input = document.getElementById("nama");
+  if (input) input.focus();
+}
+
+function renderQuiz() {
+  const q = deck[index];
+  const optionsHtml = q.options.map((opt, i) => {
+    let cls = "option";
+    if (locked) {
+      if (i === q.answer) cls += " correct";
+      else if (i === selected) cls += " wrong";
+      else cls += " dim";
+    }
+    return `<button class="${cls}" ${locked ? "disabled" : ""} onclick="handleAnswer(${i})">
+              <span class="letter">${LETTERS[i]}</span>
+              <span>${esc(opt)}</span>
+            </button>`;
+  }).join("");
+
+  let feedback = "";
+  if (locked) {
+    if (selected === q.answer) feedback = `<span class="ok">✅ Benar!</span>`;
+    else if (selected === null) feedback = `<span class="no">⏰ Waktu habis! Jawaban: ${LETTERS[q.answer]}</span>`;
+    else feedback = `<span class="no">❌ Salah! Jawaban: ${LETTERS[q.answer]}</span>`;
+  }
+
+  app.innerHTML = `
+    <div class="card">
+      <div class="quiz-top">
+        <span class="pill">Soal ${index + 1}/${deck.length}</span>
+        <span class="pill timer ${timeLeft <= 5 ? "danger" : ""}" id="timerPill">⏱ <span id="timeLeft">${timeLeft}</span>s</span>
+      </div>
+
+      <div class="progress">
+        <div class="progress-fill" id="timeBar" style="width:${(timeLeft / QUESTION_TIME) * 100}%"></div>
+      </div>
+
+      <h1 class="question">${esc(q.question)}</h1>
+      <div class="options">${optionsHtml}</div>
+      <div class="feedback">${feedback}</div>
+    </div>`;
+}
+
+function renderResult() {
+  const score = answers.filter((a) => a.isCorrect).length;
+  const total = deck.length;
+  const percent = Math.round((score / total) * 100);
+  saveScore(score, total);
+
+  const emoji = percent >= 80 ? "🎉" : percent >= 50 ? "👍" : "💪";
+  const msg = percent >= 80 ? "Luar biasa!" : percent >= 50 ? "Bagus, terus tingkatkan!" : "Jangan menyerah, coba lagi!";
+
+  const review = deck.map((q, i) => {
+    const a = answers[i] || { choice: null, isCorrect: false };
+    const picked = a.choice === null
+      ? "<span class='ri-no'>Tidak dijawab (waktu habis)</span>"
+      : (a.isCorrect
+          ? `<span class="ri-ok">${LETTERS[a.choice]}. ${esc(q.options[a.choice])}</span>`
+          : `<span class="ri-no">${LETTERS[a.choice]}. ${esc(q.options[a.choice])}</span>`);
+    const correct = `<span class="ri-ok">${LETTERS[q.answer]}. ${esc(q.options[q.answer])}</span>`;
+    return `<div class="review-item ${a.isCorrect ? "good" : "bad"}">
+              <div class="q">${i + 1}. ${esc(q.question)}</div>
+              <div class="a">Jawabanmu: ${picked}<br/>Kunci: ${correct}</div>
+            </div>`;
+  }).join("");
+
+  const lb = leaderboard.length
+    ? `<div class="leaderboard">
+         <h2>🏆 Papan Skor</h2>
+         <ol>
+           ${leaderboard.map((e, i) => `
+             <li>
+               <span class="rank">${i + 1}</span>
+               <span class="lb-name">${esc(e.name)}</span>
+               <span class="lb-score">${e.score}/${e.total}</span>
+             </li>`).join("")}
+         </ol>
+       </div>`
+    : "";
+
+  app.innerHTML = `
+    <div class="card">
+      <div class="badge">Hasil</div>
+      <div class="score-big">${emoji} ${score}/${total}</div>
+      <p class="result-meta">Skor kamu <strong>${percent}%</strong> — ${msg}</p>
+
+      <div class="row">
+        <button class="btn primary" onclick="startQuiz()">Main Lagi 🔁</button>
+        <button class="btn ghost" onclick="backHome()">Ke Beranda</button>
+      </div>
+
+      <div class="leaderboard">
+        <h2>📋 Pembahasan</h2>
+        <div class="review">${review}</div>
+      </div>
+
+      ${lb}
+    </div>`;
+}
+
+/* ---------- init ---------- */
+loadLeaderboard();
+render();
+</script>
+</body>
+</html>
